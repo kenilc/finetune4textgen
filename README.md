@@ -1,3 +1,4 @@
+```
 usage: task.py [-h] [--model MODEL] [--epochs N] [--warmup-steps N] [--lr LR]
                [--log-interval N] [--snapshot-interval N] [--seed SEED]
                --train-data FILE [--test-data FILE] --log-dir DIR --model-dir DIR
@@ -18,3 +19,4 @@ optional arguments:
   --test-data FILE      evaluation dataset
   --log-dir DIR         the directory to store the log
   --model-dir DIR       the directory to store the model
+```
