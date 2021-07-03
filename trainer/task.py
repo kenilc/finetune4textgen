@@ -13,7 +13,7 @@ from transformers import (
     get_scheduler
 )
 
-from util import (
+from .util import (
     Seq2SeqDataset,
     make_data_loader
 )
@@ -178,7 +178,7 @@ def get_args():
         help='the directory to store the model'
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     return args
 
 def init(args):
