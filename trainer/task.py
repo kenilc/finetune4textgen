@@ -1,194 +1,90 @@
-import argparse
-from datetime import datetime
-import os
-import os.path
+import pandas as pd
 
 import torch
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import Dataset
 
 from transformers import (
     T5ForConditionalGeneration,
     T5Tokenizer,
-    AdamW,
-    get_scheduler
+    TrainingArguments,
+    Trainer,
+    HfArgumentParser
 )
+from transformers.data.data_collator import DataCollatorForSeq2Seq
 
-from .util import (
-    Seq2SeqDataset,
-    make_data_loader
-)
+class Seq2SeqDataset(Dataset):
+    def __init__(self, data_source, tokenizer):
+        data = self.load_data(data_source)
+        self.input_ids = tokenizer(data['source'].tolist())['input_ids']
+        self.labels = tokenizer(data['target'].tolist())['input_ids']
 
-import logging
-logging.basicConfig(
-    format='%(asctime)-15s %(levelname)s %(message)s',
-    level=logging.INFO
-)
+    def __len__(self):
+        return len(self.input_ids)
 
-def train(args):
-    torch.manual_seed(args.seed)
+    def __getitem__(self, idx):
+        return {
+            'input_ids': self.input_ids[idx],
+            'labels': self.labels[idx],
+        }
 
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    logging.info(f'device: {device}')
+    def load_data(self, data_source):
+        data = None
+        if type(data_source) == str:
+            if data_source.endswith('csv'):
+                data = pd.read_csv(data_source)
+            if data_source.endswith('pickle'):
+                data = pd.read_pickle(data_source)
+            if data_source.endswith('parquet'):
+                data = pd.read_parquet(data_source)
+        elif type(data_source) == pd.core.frame.DataFrame:
+            data = data_source.copy()
+        if data is None:
+            raise ValueError('Data source must be a pandas.DataFrame or a file (CSV, pickle, parquet)')
+        if 'source' not in data.columns or 'target' not in data.columns:
+            raise ValueError('Data must have columns `source` and `target`')
+        return data
 
-    model = T5ForConditionalGeneration.from_pretrained(args.model)
-    model = model.to(device).train()
-    logging.info(f"Pre-trained model '{args.model}' loaded")
+def run(training_args, remaining_args):
+    model = T5ForConditionalGeneration.from_pretrained(remaining_args.model_name)
+    tokenizer = T5Tokenizer.from_pretrained(remaining_args.model_name)
 
-    tokenizer = T5Tokenizer.from_pretrained(args.model)
-    logging.info(f'Tokenizer loaded')
+    train_dataset = Seq2SeqDataset(remaining_args.train_data, tokenizer)
 
-    train_dataset = Seq2SeqDataset(args.train_data, tokenizer)
-    train_data_loader = make_data_loader(train_dataset, tokenizer)
-    logging.info(f'Training data loaded')
+    test_dataset = Seq2SeqDataset(remaining_args.eval_data, tokenizer) \
+        if remaining_args.eval_data else None
 
-    test_data_loader = None
-    if args.test_data:
-        test_dataset = Seq2SeqDataset(args.test_data, tokenizer)
-        test_data_loader = make_data_loader(test_dataset, tokenizer)
-        logging.info(f'Test data loaded')
+    data_collator = DataCollatorForSeq2Seq(tokenizer, model, padding='longest')
 
-    optimizer = AdamW(model.parameters(), lr=args.lr)
-
-    lr_scheduler = get_scheduler(
-        'linear',
-        optimizer=optimizer,
-        num_warmup_steps=args.warmup_steps,
-        num_training_steps=args.epochs * len(train_data_loader)
+    trainer = Trainer(
+        model         = model,
+        tokenizer     = tokenizer,
+        args          = training_args,
+        data_collator = data_collator,
+        train_dataset = train_dataset,
+        eval_dataset  = test_dataset,
     )
-
-    logging.info(f'Training started')
-    with SummaryWriter(args.log_dir) as writer:
-        steps = 0
-        for epoch in range(args.epochs):
-            for batch in train_data_loader:
-                optimizer.zero_grad()
-                batch = {k: v.to(device) for k, v in batch.items()}
-                outputs = model(**batch)
-                loss = outputs.loss
-                loss.backward()
-
-                if steps % args.log_interval == 0:
-                    writer.add_scalar('Loss/train', loss, steps)
-
-                    if test_data_loader:
-                        test_loss = test(model, device, test_data_loader)
-                        writer.add_scalar('Loss/test', test_loss, steps)
-                        logging.info(f'steps: {steps} loss/train: {loss} loss/test: {test_loss}')
-
-                if steps > 0 and steps % args.snapshot_interval == 0:
-                    save(model, 'SNAPSHOT', args.model_dir)
-
-                optimizer.step()
-                lr_scheduler.step()
-                steps += 1
-    logging.info(f'Training ended')
-
-    save(model, 'FINAL', args.model_dir)
-
-def test(model, device, test_data_loader):
-    loss, num_batches = 0, 0
-    model.eval()
-    with torch.no_grad():
-        for batch in test_data_loader:
-            batch = {k: v.to(device) for k, v in batch.items()}
-            outputs = model(**batch)
-            loss += outputs.loss
-            num_batches += 1
-    model.train()
-    return loss / num_batches
-
-def save(model, tag, model_dir):
-    ts = datetime.now().isoformat()
-    path = os.path.join(model_dir, f'model-{tag}-{ts}.pt')
-    torch.save(model, path)
+    trainer.train()
 
 def get_args():
-    parser = argparse.ArgumentParser(description='T5 finetuner for seq2seq tasks')
+    parser = HfArgumentParser(TrainingArguments)
     parser.add_argument(
-        '--model',
+        '--model_name',
         default='t5-small',
-        help='the pretrained T5 model to use (default: t5-small)'
+        help='pre-trained model name (default: t5-small)'
     )
     parser.add_argument(
-        '--epochs',
-        type=int,
-        default=5,
-        metavar='N',
-        help='number of epochs to train (default: 5)'
-    )
-    parser.add_argument(
-        '--warmup-steps',
-        type=int,
-        default=200,
-        metavar='N',
-        help='number of warm-up steps (default: 200)'
-    )
-    parser.add_argument(
-        '--lr',
-        type=float,
-        default=0.005,
-        metavar='LR',
-        help='learning rate (default: 0.005)'
-    )
-    parser.add_argument(
-        '--log-interval',
-        type=int,
-        default=10,
-        metavar='N',
-        help='how many steps to wait before logging training status (default: 10)'
-    )
-    parser.add_argument(
-        '--snapshot-interval',
-        type=int,
-        default=50,
-        metavar='N',
-        help='how many steps to wait before taking a model snapshot (default: 50)'
-    )
-    parser.add_argument(
-        '--seed',
-        type=int,
-        default=1,
-        help='random seed (default: 1)'
-    )
-    parser.add_argument(
-        '--train-data',
+        '--train_data',
         default=None,
-        metavar='FILE',
         required=True,
         help='training dataset'
     )
     parser.add_argument(
-        '--test-data',
+        '--eval_data',
         default=None,
-        metavar='FILE',
         help='evaluation dataset'
     )
-    parser.add_argument(
-        '--log-dir',
-        default=None,
-        metavar='DIR',
-        required=True,
-        help='the directory to store the log'
-    )
-    parser.add_argument(
-        '--model-dir',
-        default=None,
-        metavar='DIR',
-        required=True,
-        help='the directory to store the model'
-    )
-
-    args, _ = parser.parse_known_args()
-    return args
-
-def init(args):
-    assert os.path.exists(args.train_data)
-    assert args.test_data is None or os.path.exists(args.test_data)
-
-    os.makedirs(args.log_dir, exist_ok=True)
-    os.makedirs(args.model_dir, exist_ok=True)
+    return parser.parse_args_into_dataclasses(return_remaining_strings=True)
 
 if __name__ == '__main__':
-    args = get_args()
-    init(args)
-    train(args)
+    training_args, remaining_args = get_args()[:2]
+    run(training_args, remaining_args)
