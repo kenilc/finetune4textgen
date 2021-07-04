@@ -1,6 +1,6 @@
 A small python script to fine-tune a pre-trained T5 model for seq-2-seq task.
 
-(You may easily modify `trainer/task.py` for other models.)
+(You may easily modify `trainer/task.py` for other models.
 
 ## Sample usage
 
@@ -32,7 +32,7 @@ python trainer/task.py \
     --model_name "t5-small"
 ```
 
-The last 3 arguments were additional for this script.
+The last 3 arguments are additional for this script.
 
 ### Data format for training and evaluation
 
