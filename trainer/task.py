@@ -8,7 +8,7 @@ from transformers import (
 from transformers.data.data_collator import DataCollatorForSeq2Seq
 from datasets import Dataset
 
-def load_dataset(data_source, tokenizer):
+def load_dataset(path_or_paths, tokenizer):
     def _tokenize(entry):
         output = {
             'input_ids': tokenizer.encode(entry['source']),
@@ -17,18 +17,20 @@ def load_dataset(data_source, tokenizer):
         output['length'] = max(len(output['input_ids']), len(output['labels']))
         return output
 
-    dataset = Dataset.from_csv(data_source)
+    path_or_paths = [path.strip() for path in path_or_paths.split(',')]
+
+    dataset = Dataset.from_csv(path_or_paths)
     dataset = dataset.map(_tokenize)
     return dataset
 
-def run(training_args, remaining_args):
-    model = T5ForConditionalGeneration.from_pretrained(remaining_args.model_name)
-    tokenizer = T5Tokenizer.from_pretrained(remaining_args.model_name)
+def run(training_args, custom_args):
+    model = T5ForConditionalGeneration.from_pretrained(custom_args.model_name)
+    tokenizer = T5Tokenizer.from_pretrained(custom_args.model_name)
 
-    train_dataset = load_dataset(remaining_args.train_data, tokenizer)
+    train_dataset = load_dataset(custom_args.train_csv_files, tokenizer)
 
-    eval_dataset = load_dataset(remaining_args.eval_data, tokenizer) \
-        if remaining_args.eval_data else None
+    eval_dataset = load_dataset(custom_args.eval_csv_files, tokenizer) \
+        if custom_args.eval_csv_files else None
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model, padding='longest')
 
@@ -50,19 +52,19 @@ def get_args():
         help='pre-trained model name (default: t5-small)'
     )
     parser.add_argument(
-        '--train_data',
+        '--train_csv_files',
         default=None,
         required=True,
-        help='training dataset (CSV format)'
+        help='CSV file(s) for training. Paths are comma-separated'
     )
     parser.add_argument(
-        '--eval_data',
+        '--eval_csv_files',
         default=None,
-        help='evaluation dataset (CSV format)'
+        help='CSV file(s) for evalation. Paths are comma-separated'
     )
     # Ignore unknown args.
     return parser.parse_args_into_dataclasses(return_remaining_strings=True)[:2]
 
 if __name__ == '__main__':
-    training_args, remaining_args = get_args()
-    run(training_args, remaining_args)
+    training_args, custom_args = get_args()
+    run(training_args, custom_args)
