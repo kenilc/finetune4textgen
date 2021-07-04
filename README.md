@@ -1,6 +1,7 @@
-A small python script to fine-tune a pre-trained T5 model for seq-2-seq task.
+A small python script to fine-tune pre-trained T5 models for seq-2-seq tasks. The script heavily uses the built-in functionalities of [Hugging Face's transformers](https://huggingface.co).
 
-(You may easily modify `trainer/task.py` for other models.
+An overview of T5 can be found here:
+* [Exploring Transfer Learning with T5: the Text-To-Text Transfer Transformer](https://ai.googleblog.com/2020/02/exploring-transfer-learning-with-t5.html)
 
 ## Sample usage
 
@@ -10,7 +11,7 @@ for the complete list of available arguments and their meaning.
 
 ### How to fine-tune
 
-You may also check out this repo and run it on Google colab notebooks using the `%%bash` magic.
+You may also check out this repo and run it on Google's Colab notebooks using the `%%bash` magic.
 
 ```
 python trainer/task.py \
