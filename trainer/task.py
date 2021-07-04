@@ -49,7 +49,10 @@ def get_args():
     parser.add_argument(
         '--model_name',
         default='t5-small',
-        help='pre-trained model name (default: t5-small)'
+        help=(
+            'pre-trained model name (default: t5-small), or'
+            ' path to a saved checkpoint to resume training'
+        )
     )
     parser.add_argument(
         '--train_csv_files',
