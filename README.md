@@ -5,8 +5,8 @@ An overview of T5 can be found here:
 
 ## Sample usage
 
-Please refer to 
-[TrainingArguments](https://huggingface.co/transformers/_modules/transformers/training_args.html) 
+Please refer to
+[TrainingArguments](https://huggingface.co/transformers/_modules/transformers/training_args.html)
 for the complete list of available arguments and their meaning.
 
 ### How to fine-tune
@@ -27,7 +27,7 @@ python trainer/task.py \
     --save_strategy steps \
     --save_steps 5000 \
     --group_by_length \
-    --output_dir "$OUTPUT_DIR" \    
+    --output_dir "$OUTPUT_DIR" \
     --train_csv_files "$DATA_DIR/train_data.csv" \
     --eval_csv_files "$DATA_DIR/eval_data.csv" \
     --model_name "t5-small"
@@ -71,6 +71,6 @@ John was driving a car.
 ## Required Python packages
 
 * `datasets`
-* `transformers`
 * `sentencepiece`
-* `pytorch`
+* `torch`
+* `transformers`

@@ -4,7 +4,7 @@ from setuptools import setup
 REQUIRED_PACKAGES = [
     'datasets',
     'pyarrow',
-    'pytorch',
+    'torch',
     'sentencepiece',
     'transformers',
 ]
