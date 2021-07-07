@@ -2,11 +2,13 @@ from setuptools import find_packages
 from setuptools import setup
 
 REQUIRED_PACKAGES = [
-    'datasets',
+    'datasets>=1.8.0',
+    'numpy>=1.18.5'
     'pyarrow',
     'torch',
+    'tqdm',
     'sentencepiece',
-    'transformers',
+    'transformers>=4.8.2',
 ]
 
 setup(
