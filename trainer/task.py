@@ -6,30 +6,16 @@ from transformers import (
     HfArgumentParser
 )
 from transformers.data.data_collator import DataCollatorForSeq2Seq
-from datasets import Dataset
 
-def load_dataset(path_or_paths, tokenizer):
-    def _tokenize(entry):
-        output = {
-            'input_ids': tokenizer.encode(entry['source']),
-            'labels': tokenizer.encode(entry['target'])
-        }
-        output['length'] = max(len(output['input_ids']), len(output['labels']))
-        return output
-
-    path_or_paths = [path.strip() for path in path_or_paths.split(',')]
-
-    dataset = Dataset.from_csv(path_or_paths)
-    dataset = dataset.map(_tokenize)
-    return dataset
+import util
 
 def run(training_args, custom_args):
     model = T5ForConditionalGeneration.from_pretrained(custom_args.model_name)
     tokenizer = T5Tokenizer.from_pretrained(custom_args.model_name)
 
-    train_dataset = load_dataset(custom_args.train_csv_files, tokenizer)
+    train_dataset = util.load_dataset(custom_args.train_csv_files, tokenizer)
 
-    eval_dataset = load_dataset(custom_args.eval_csv_files, tokenizer) \
+    eval_dataset = util.load_dataset(custom_args.eval_csv_files, tokenizer) \
         if custom_args.eval_csv_files else None
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model, padding='longest')
@@ -58,12 +44,18 @@ def get_args():
         '--train_csv_files',
         default=None,
         required=True,
-        help='CSV file(s) for training. Paths are comma-separated'
+        help=(
+            'CSV file(s) for training. Paths are comma-separated.'
+            ' Files can be local or in Google Cloud Storage'
+        )
     )
     parser.add_argument(
         '--eval_csv_files',
         default=None,
-        help='CSV file(s) for evalation. Paths are comma-separated'
+        help=(
+            'CSV file(s) for evalation. Paths are comma-separated.'
+            ' Files can be local or in Google Cloud Storage'
+        )
     )
     # Ignore unknown args.
     return parser.parse_args_into_dataclasses(return_remaining_strings=True)[:2]
