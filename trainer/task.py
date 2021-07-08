@@ -7,15 +7,15 @@ from transformers import (
 )
 from transformers.data.data_collator import DataCollatorForSeq2Seq
 
-import util
+from .util import load_dataset
 
 def run(training_args, custom_args):
     model = T5ForConditionalGeneration.from_pretrained(custom_args.model_name)
     tokenizer = T5Tokenizer.from_pretrained(custom_args.model_name)
 
-    train_dataset = util.load_dataset(custom_args.train_csv_files, tokenizer)
+    train_dataset = load_dataset(custom_args.train_csv_files, tokenizer)
 
-    eval_dataset = util.load_dataset(custom_args.eval_csv_files, tokenizer) \
+    eval_dataset = load_dataset(custom_args.eval_csv_files, tokenizer) \
         if custom_args.eval_csv_files else None
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model, padding='longest')
@@ -36,7 +36,7 @@ def get_args():
         '--model_name',
         default='t5-small',
         help=(
-            'pre-trained model name (default: t5-small), or'
+            'Pre-trained model name (default: t5-small), or'
             ' path to a saved checkpoint to resume training'
         )
     )
