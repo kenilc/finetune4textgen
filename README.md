@@ -71,6 +71,7 @@ John was driving a car.
 ## Required Python packages
 
 * `datasets`
+* `google-cloud-storage`
 * `sentencepiece`
 * `torch`
 * `transformers`
