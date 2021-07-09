@@ -7,7 +7,7 @@ from transformers import (
 )
 from transformers.data.data_collator import DataCollatorForSeq2Seq
 
-from .util import load_dataset
+from .util import load_dataset, upload_to_gcs
 
 def run(training_args, custom_args):
     model = T5ForConditionalGeneration.from_pretrained(custom_args.model_name)
@@ -57,9 +57,21 @@ def get_args():
             ' Files can be local or in Google Cloud Storage'
         )
     )
+    parser.add_argument(
+        '--job-dir',
+        default=None,
+        help='For training on Google AI platform'
+    )
     # Ignore unknown args.
     return parser.parse_args_into_dataclasses(return_remaining_strings=True)[:2]
 
 if __name__ == '__main__':
     training_args, custom_args = get_args()
-    run(training_args, custom_args)
+    try:
+        run(training_args, custom_args)
+    finally:
+        # TODO Copy to GCS when checkpoint is created.
+        output_dir = training_args.output_dir
+        job_dir = custom_args.job_dir
+        if job_dir and job_dir.startswith('gs://'):
+            upload_to_gcs(output_dir, job_dir + '/models')
