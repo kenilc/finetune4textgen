@@ -5,14 +5,16 @@ An overview of T5 can be found here:
 
 ## Sample usage
 
+The script can be run locally or on Google AI Platform.
+Similarly, training and evaluation data can be stored locally or downloaded from Google Cloud Storage.
+
 Please refer to
 [TrainingArguments](https://huggingface.co/transformers/_modules/transformers/training_args.html)
 for the complete list of available arguments and their meaning.
 
 ### How to fine-tune
 
-The script can be run locally or on Google AI platform.
-Training and evaluation data can be stored locally or downloaded from Google Cloud Storage.
+On local machines:
 
 ```
 python trainer/task.py \
