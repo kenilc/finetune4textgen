@@ -11,7 +11,8 @@ for the complete list of available arguments and their meaning.
 
 ### How to fine-tune
 
-You may also check out this repo and run it on Google's Colab notebooks using the `%%bash` magic.
+The script can be run locally or on Google AI platform.
+Training and evaluation data can be stored locally or downloaded from Google Cloud Storage.
 
 ```
 python trainer/task.py \
