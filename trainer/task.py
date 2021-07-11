@@ -7,7 +7,7 @@ from transformers import (
 )
 from transformers.data.data_collator import DataCollatorForSeq2Seq
 
-from .util import load_dataset, upload_to_gcs
+from .util import load_dataset, UploadToGCSCallback
 
 def run(training_args, custom_args):
     model = T5ForConditionalGeneration.from_pretrained(custom_args.model_name)
@@ -27,6 +27,9 @@ def run(training_args, custom_args):
         data_collator = data_collator,
         train_dataset = train_dataset,
         eval_dataset  = eval_dataset,
+        callbacks     = [
+            UploadToGCSCallback(custom_args.job_dir)
+        ]
     )
     trainer.train()
 
@@ -67,11 +70,4 @@ def get_args():
 
 if __name__ == '__main__':
     training_args, custom_args = get_args()
-    try:
-        run(training_args, custom_args)
-    finally:
-        # TODO Copy to GCS when checkpoint is created.
-        output_dir = training_args.output_dir
-        job_dir = custom_args.job_dir
-        if job_dir and job_dir.startswith('gs://'):
-            upload_to_gcs(output_dir, job_dir + '/models')
+    run(training_args, custom_args)

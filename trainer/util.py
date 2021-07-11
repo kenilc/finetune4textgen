@@ -10,6 +10,8 @@ from google.cloud import storage
 
 import torch
 
+from transformers.trainer_callback import TrainerCallback
+
 def load_dataset(path_or_paths, tokenizer):
     def _tokenize(entry):
         output = {
@@ -43,21 +45,41 @@ def download_from_gcs(path):
         storage.Client().download_blob_to_file(path, f)
     return temp_file
 
-def upload_to_gcs(folder, uri, override=False):
+def upload_to_gcs(local_dir, uri, override=False):
     o = urlparse(uri)
     if o.scheme != 'gs':
         raise ValueError('URI for Google Cloud Storage must starts with `gs://`')
     bucket_name, prefix = o.netloc, o.path[1:]
 
-    regex = re.compile(fr'{folder}/*')
+    regex = re.compile(fr'{local_dir}/*')
     bucket = storage.Client().get_bucket(bucket_name)
-    for file_path in glob.glob(os.path.join(folder, '**'), recursive=True):
+    for file_path in glob.glob(os.path.join(local_dir, '**'), recursive=True):
         if not os.path.isdir(file_path):
             truncated_path = regex.sub('', file_path)
             blob_name = f'{prefix}/{truncated_path}'
             blob = bucket.blob(blob_name)
             if override or not blob.exists():
                 blob.upload_from_filename(file_path)
+
+class UploadToGCSCallback(TrainerCallback):
+    def __init__(self, job_dir):
+        self.job_dir = job_dir
+
+    def on_save(self, args, state, control, **kwargs):
+        if self._validate(args.output_dir, self.job_dir):
+            upload_to_gcs(args.output_dir, self.job_dir + '/models')
+
+    def on_log(self, args, state, control, **kwargs):
+        if self._validate(args.logging_dir, self.job_dir):
+            upload_to_gcs(args.logging_dir, self.job_dir + '/logs')
+
+    def _validate(self, local_dir, remote_dir):
+        return (
+            local_dir and
+            os.path.exists(local_dir) and
+            remote_dir and
+            remote_dir.startswith('gs://')
+        )
 
 def generate(tokenizer, model, prompt, **kwargs):
     input_ids = tokenizer.encode(prompt, return_tensors='pt')
