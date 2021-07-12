@@ -1,6 +1,6 @@
 from transformers import (
-    T5ForConditionalGeneration,
-    T5Tokenizer,
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
     TrainingArguments,
     Trainer,
     HfArgumentParser
@@ -10,8 +10,8 @@ from transformers.data.data_collator import DataCollatorForSeq2Seq
 from .util import load_dataset, UploadToGCSCallback
 
 def run(training_args, custom_args):
-    model = T5ForConditionalGeneration.from_pretrained(custom_args.model_name)
-    tokenizer = T5Tokenizer.from_pretrained(custom_args.model_name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(custom_args.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(custom_args.model_name)
 
     train_dataset = load_dataset(custom_args.train_csv_files, tokenizer)
 
