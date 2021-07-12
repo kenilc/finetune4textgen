@@ -1,7 +1,4 @@
-A small python script to fine-tune pre-trained T5 models for seq-2-seq tasks. The script heavily uses the built-in functionalities of [Hugging Face's transformers](https://huggingface.co).
-
-An overview of T5 can be found here:
-* [Exploring Transfer Learning with T5: the Text-To-Text Transfer Transformer](https://ai.googleblog.com/2020/02/exploring-transfer-learning-with-t5.html)
+A small python script to fine-tune pre-trained models for text generation. The script heavily uses the built-in functionalities of [Hugging Face's transformers](https://huggingface.co).
 
 ## Sample usage
 
@@ -78,3 +75,7 @@ John was driving a car.
 * `sentencepiece`
 * `torch`
 * `transformers`
+
+## References
+
+* [Exploring Transfer Learning with T5: the Text-To-Text Transfer Transformer](https://ai.googleblog.com/2020/02/exploring-transfer-learning-with-t5.html)
