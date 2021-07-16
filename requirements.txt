@@ -1,0 +1,8 @@
+datasets
+google-cloud-storage
+numpy
+pyarrow
+sentencepiece
+tensorboardX
+torch
+transformers
