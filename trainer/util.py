@@ -73,6 +73,13 @@ class UploadToGCSCallback(TrainerCallback):
         if self._validate(args.logging_dir, self.job_dir):
             upload_to_gcs(args.logging_dir, self.job_dir + '/logs')
 
+    def on_train_end(self, args, state, control, **kwargs):
+        if args.output_dir:
+            checkpoint_dir = os.path.join(args.output_dir, 'checkpoint-final')
+            kwargs['model'].save_pretrained(checkpoint_dir)
+            kwargs['tokenizer'].save_pretrained(checkpoint_dir)
+            self.on_save(args, state, control, **kwargs)
+
     def _validate(self, local_dir, remote_dir):
         return (
             local_dir and
