@@ -38,10 +38,7 @@ def get_args():
     parser.add_argument(
         '--model_name',
         default='t5-small',
-        help=(
-            'Pre-trained model name (default: t5-small), or'
-            ' path to a saved checkpoint to resume training'
-        )
+        help='Pre-trained model name (default: t5-small)'
     )
     parser.add_argument(
         '--train_csv_files',
@@ -63,7 +60,7 @@ def get_args():
     parser.add_argument(
         '--job-dir',
         default=None,
-        help='For training on Google AI platform'
+        help='For training on Google AI Platform'
     )
     # Ignore unknown args.
     return parser.parse_args_into_dataclasses(return_remaining_strings=True)[:2]
