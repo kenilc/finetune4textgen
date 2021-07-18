@@ -45,7 +45,7 @@ def download_from_gcs(path):
         storage.Client().download_blob_to_file(path, f)
     return temp_file
 
-def upload_to_gcs(local_dir, uri, override=False):
+def upload_to_gcs(local_dir, uri, overwrite=False):
     o = urlparse(uri)
     if o.scheme != 'gs':
         raise ValueError('URI for Google Cloud Storage must starts with `gs://`')
@@ -58,7 +58,8 @@ def upload_to_gcs(local_dir, uri, override=False):
             truncated_path = regex.sub('', file_path)
             blob_name = f'{prefix}/{truncated_path}'
             blob = bucket.blob(blob_name)
-            if override or not blob.exists():
+            if overwrite or not blob.exists():
+                print(f'upload {file_path} to {uri}')
                 blob.upload_from_filename(file_path)
 
 class UploadToGCSCallback(TrainerCallback):
@@ -71,14 +72,16 @@ class UploadToGCSCallback(TrainerCallback):
 
     def on_log(self, args, state, control, **kwargs):
         if self._validate(args.logging_dir, self.job_dir):
-            upload_to_gcs(args.logging_dir, self.job_dir + '/logs')
+            upload_to_gcs(args.logging_dir, self.job_dir + '/logs', overwrite=True)
 
     def on_train_end(self, args, state, control, **kwargs):
         if args.output_dir:
             checkpoint_dir = os.path.join(args.output_dir, 'checkpoint-final')
+            print(f'checkpoint_dir: {checkpoint_dir}')
             kwargs['model'].save_pretrained(checkpoint_dir)
             kwargs['tokenizer'].save_pretrained(checkpoint_dir)
-            self.on_save(args, state, control, **kwargs)
+        self.on_save(args, state, control, **kwargs)
+        self.on_log(args, state, control, **kwargs)
 
     def _validate(self, local_dir, remote_dir):
         return (
