@@ -26,7 +26,7 @@ python trainer/task.py \
     --logging_steps 250 \
     --save_strategy steps \
     --save_steps 5000 \
-    --group_by_length \
+    --group_by_length True \
     --output_dir "$OUTPUT_DIR" \
     --train_csv_files "$DATA_DIR/train_data.csv" \
     --eval_csv_files "$DATA_DIR/eval_data.csv" \
